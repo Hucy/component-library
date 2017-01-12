@@ -22,6 +22,7 @@
         this.option = paramObj || {}
         this.el = this.option.el || 'body'
         this.type = this.option.type || 'days'
+        this._currentShowType = this.option.type
         this.customizeClass = this.option.customizeClass || ''
         this.currentDate = this.option.currentDate || ''
         this.maxDate = this.option.maxDate || ''
@@ -43,7 +44,8 @@
         constructor: DatePicker,
         _startUp: function() {
             this._beforeInit()
-            this._init()
+            this._init(this._dateHandle(this._setcurrentDate()))
+            this._inited()
         },
         _replaceArr_: function() {
             var arr = this.slice()
@@ -142,7 +144,7 @@
                     var tdGen = function(index) {
                         var str = ''
                         for (var i = 0; i < 7; i++) {
-                            str += '<td data-date-type="' + dataArr[index * 7 + i].dateType + '" data-date="' + dataArr[index * 7 + i].data.date + '" data-today="' + (dataArr[index * 7 + i].today ? true : false) + '">' + dayRenderFn(dataArr[index * 7 + i].data) + '</td>'
+                            str += '<td  class="date-node"  data-date-type="' + dataArr[index * 7 + i].dateType + '" data-date="' + dataArr[index * 7 + i].data.date + '" data-today="' + (dataArr[index * 7 + i].today ? true : false) + '">' + dayRenderFn(dataArr[index * 7 + i].data) + '</td>'
                         }
                         return str
                     }
@@ -152,26 +154,97 @@
                             '</tr>'
                     }
                     return html
-                },
-                dateViewNode = document.createElement('table');
-            dateViewNode.innerHTML = htmlGen()
-            this._el_.querySelectorAll('.date-picker-view-wrap')[0].appendChild(dateViewNode)
+                };
+
+            return htmlGen()
+
             console.log(dateViewNode)
         },
         _next: function() {
+            var currentDateArr = this._dateHandle(this._setcurrentDate()),
+                nextDateArr = this._replaceArr_.call(currentDateArr, 1, 1, currentDateArr[1] + 1)
+            this._setcurrentDate(nextDateArr)
+            this._init(nextDateArr)
 
+
+
+            this.nextCb && this.nextCb(this)
         },
         _prev: function() {
+            var currentDateArr = this._dateHandle(this._setcurrentDate()),
+                prevDateArr = this._replaceArr_.call(currentDateArr, 1, 1, currentDateArr[1] - 1)
+            this._setcurrentDate(prevDateArr)
+            this._init(prevDateArr)
 
+            this.prevCb && this.prevCb(this)
+        },
+        _dateNode: function(dateNode) {
+            var clickDateArr = this._dateHandle(dateNode.dataset.date)
+            this._setcurrentDate(clickDateArr)
+            this._init(clickDateArr)
+
+
+
+            this.nodeClickCb && this.nodeClickCb(dateNode, this)
         },
         _eventBind: function() {
+            var _this = this;
+            _this._el_.addEventListener('click', function(e) {
+                console.log(e)
+                var eventTarget = e.target;
+                //搜索最近的父元素或自身
+                function closest(el, selector, stopSelector) {
+                    var retval = null;
+                    while (el) {
+                        if (el.matches(selector)) {
+                            retval = el;
+                            break
+                        } else if (stopSelector && el.matches(stopSelector)) {
+                            break
+                        }
+                        el = el.parentElement;
+                    }
+                    return retval;
+                }
+                var dateNode = closest(eventTarget, '.date-node', '.date-picker-view-wrap');
+                /** 
+                 * 日期节点
+                 */
+                if (dateNode) {
 
+                    _this._dateNode(dateNode)
+                }
+                /** 
+                 * 上个日期
+                 * 下个日期
+                 * 更改显示周期
+                 */
+                if (eventTarget && eventTarget.classList.contains('prev-btn')) {
+                    _this._prev()
+                }
+                if (eventTarget && eventTarget.classList.contains('next-btn')) {
+                    _this._next()
+                }
+
+                if (eventTarget && eventTarget.classList.contains('current-date')) {
+                    _this._changeView()
+                }
+
+                e.stopPropagation()
+            }, false)
         },
-        _setcurrentDate: function() {
+        _setcurrentDate: function(dateArr) {
             var nowTime = new Date().getTime()
-            return this.currentDate || this._dateFormat(nowTime)
+            this.currentDate = this.currentDate || this._dateFormat(nowTime)
+            this.currentDate = dateArr ? this._dateFormat(this._dateToTime(dateArr)) : this.currentDate;
+            dateArr && (this._el_.querySelectorAll('.current-date')[0].innerHTML = this.currentDate)
+            this._ifInput() && (document.querySelectorAll(this.el)[0].value = this.currentDate)
+            return this.currentDate
         },
-        _dateFormat: function(dateTime) {
+        getcurrentDate: function() {
+            return this._data(this._dateHandle(this._setcurrentDate()))
+        },
+        _dateFormat: function() {
             var date = new Date(dateTime),
                 year = date.getUTCFullYear(),
                 month = date.getUTCMonth(),
@@ -184,12 +257,16 @@
         _changeView: function() {
 
         },
+        _ifInput() {
+            var elNode = document.querySelectorAll(this.el)[0],
+                ifInput = elNode.tagName.toLowerCase() === 'input'
+            return ifInput
+        },
         _setInitStyle: function() {
             var elNode = document.querySelectorAll(this.el)[0],
-                ifInput = elNode.tagName.toLowerCase() === 'input',
                 basicStyle = 'bottom:auto;right:auto;top:' + (elNode.getBoundingClientRect().top + elNode.offsetHeight) + 'px;left:' + elNode.getBoundingClientRect().left + 'px;'
             if (this.el === 'body') return ''
-            if (ifInput) return basicStyle + 'width:' +
+            if (this._ifInput()) return basicStyle + 'width:' +
                 elNode.offsetWidth + 'px;'
             return basicStyle
         },
@@ -207,9 +284,9 @@
             var _this_ = this,
                 elNode = document.querySelectorAll(this.el)[0],
                 datePickerWrap =
-                '<div class="date-picker-top-handle"><i>&lsaquo;</i><sapn>' +
+                '<div class="date-picker-top-handle"><i class="prev-btn">&lsaquo;</i><sapn class="current-date">' +
                 this._setcurrentDate() +
-                '</sapn><i>&rsaquo;</i></div>' +
+                '</sapn><i class="next-btn">&rsaquo;</i></div>' +
                 '<div class="date-picker-view-wrap"></div>',
                 datePickerWrapNode = document.createElement('div');
             datePickerWrapNode.classList.add('date-picker-wrap', this.customizeClass)
@@ -226,11 +303,19 @@
 
 
         },
-        _init() {
-            this._view(this._dateHandle(this._setcurrentDate()))
+        _init(dateArr) {
+            var dateViewNode = document.createElement('table'),
+                viewWrap = this._el_.querySelectorAll('.date-picker-view-wrap')[0],
+                tableNode = viewWrap.querySelectorAll('table')[0];
+            dateViewNode.innerHTML = this._view(dateArr)
+            console.log(tableNode)
+            if (!tableNode) { viewWrap.appendChild(dateViewNode) } else {
+                viewWrap.replaceChild(dateViewNode, tableNode)
+            }
+
         },
         _inited: function() {
-
+            this._eventBind()
         },
         _beforeDestroy: function() {
 
@@ -287,9 +372,10 @@
 
 
 
-new window.componentLibrary.DatePicker({
+var x = new window.componentLibrary.DatePicker({
     el: '#app',
     customizeClass: 'my-date-picker'
+
 
 
 })

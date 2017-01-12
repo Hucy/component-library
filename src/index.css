@@ -1,5 +1,4 @@
 .date-picker-wrap {
-    background: rgba(0, 0, 0, .1);
     min-height: 20px;
     min-width: 160px;
     z-index: 999;
@@ -10,4 +9,50 @@
     top: 0;
     margin: auto;
     max-width: 240px;
+    border-radius: 4px;
+    padding: 4px;
+    box-sizing: border-box;
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.175);
+}
+
+.prev-btn,
+.next-btn,
+.current-date,
+.date-node {
+    cursor: pointer;
+    text-align: center;
+}
+
+.date-picker-top-handle {
+    text-align: center;
+}
+
+.prev-btn,
+.next-btn,
+.current-date {
+    font-style: normal;
+    display: inline-block;
+}
+
+.prev-btn:hover,
+.next-btn:hover,
+.current-date:hover {
+    background: #eee;
+}
+
+.current-date {
+    width: 80%;
+}
+
+.prev-btn,
+.next-btn {
+    padding: 0 2%;
+}
+
+.date-picker-view-wrap table {
+    width: 100%;
+}
+
+.date-node[data-today="true"] {
+    background-color: #286090;
 }
