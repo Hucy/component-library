@@ -22,7 +22,7 @@
         this.option = paramObj || {}
         this.el = this.option.el || 'body'
         this.type = this.option.type || 'days'
-        this._currentShowType = this.option.type
+        this._currentShowType = this.type
         this.customizeClass = this.option.customizeClass || ''
         this.currentDate = this.option.currentDate || ''
         this.maxDate = this.option.maxDate || ''
@@ -62,6 +62,8 @@
                 .replace('dd', '([0-9]{2})'))
             var originDateArr = dateString.match(dateRegExp).slice(1, 4)
             originDateArr.splice(1, 1, originDateArr[1] - 1)
+            originDateArr.splice(0, 1, originDateArr[0] - 0)
+            originDateArr.splice(2, 1, originDateArr[2] - 0)
             return originDateArr
         },
         _dateToTime: function(dateArr) {
@@ -82,115 +84,222 @@
             return days
         },
         _viewData: function(dateArr) {
-            var prevDateArr = [],
-                currentDateArr = [],
-                nextDateArr = [],
-                days = this._getDaysOfMonth(dateArr),
-                firstDayTime = this._dateToTime(this._replaceArr_.call(dateArr, 2, 1, 1)),
-                endDayTime = this._dateToTime(this._replaceArr_.call(dateArr, 2, 1, days)),
-                firstDayWeek = new Date(firstDayTime).getUTCDay(),
-                endDayWeek = new Date(endDayTime).getUTCDay();
-            console.log(firstDayWeek, days, endDayWeek)
+            console.log(dateArr)
+            var dataArr = [],
+                _this = this
+            var daysDataGen = function() {
+                var prevDateArr = [],
+                    currentDateArr = [],
+                    nextDateArr = [],
+                    days = this._getDaysOfMonth(dateArr),
+                    firstDayTime = this._dateToTime(this._replaceArr_.call(dateArr, 2, 1, 1)),
+                    endDayTime = this._dateToTime(this._replaceArr_.call(dateArr, 2, 1, days)),
+                    firstDayWeek = new Date(firstDayTime).getUTCDay(),
+                    endDayWeek = new Date(endDayTime).getUTCDay();
+                // console.log(firstDayWeek, days, endDayWeek)
                 /** 
                  * 设置上个月多余日期
                  */
-            var setPrevDateArr = function() {
-                    for (var i = firstDayWeek - 1; i >= 0; i--) {
-                        data = (function(index) {
-                            return this._data(this._replaceArr_.call(dateArr, 1, 2, dateArr[1] - 1, index))
-                        }).call(this, this._getDaysOfMonth(this._replaceArr_.call(dateArr, 1, 1, dateArr[1] - 1)) - i)
-                        prevDateArr.push({ data: data, dateType: 'prev' })
+                var setPrevDateArr = function() {
+                        for (var i = firstDayWeek - 1; i >= 0; i--) {
+                            var data = (function(index) {
+                                return this._data(this._replaceArr_.call(dateArr, 1, 2, dateArr[1] - 1, index))
+                            }).call(this, this._getDaysOfMonth(this._replaceArr_.call(dateArr, 1, 1, dateArr[1] - 1)) - i)
+                            prevDateArr.push({ data: data, dateType: 'prev' })
+                        }
                     }
-                }
-                /** 
-                 * 设置下个月多余日期
-                 */
-            var setNextDateArr = function() {
-                    for (var i = 0; i < 6 - endDayWeek; i++) {
-                        data = (function(index) {
-                            return this._data(this._replaceArr_.call(dateArr, 1, 2, dateArr[1] + 1, index + 1))
+                    /** 
+                     * 设置下个月多余日期
+                     */
+                var setNextDateArr = function() {
+                        for (var i = 0; i < 6 - endDayWeek; i++) {
+                            var data = (function(index) {
+                                return this._data(this._replaceArr_.call(dateArr, 1, 2, dateArr[1] + 1, index + 1))
+                            }).call(this, i)
+                            nextDateArr.push({ data: data, dateType: 'next' })
+                        }
+                    }
+                    /** 
+                     * 设置当前月份日期
+                     */
+                var setCurrentDateArr = function() {
+                    for (var i = 0; i < days; i++) {
+                        var data = (function(index) {
+                            return this._data(this._replaceArr_.call(dateArr, 2, 1, index + 1))
                         }).call(this, i)
-                        nextDateArr.push({ data: data, dateType: 'next' })
+                        currentDateArr.push({ data: data, dateType: 'current', today: this._dateToTime(this._dateHandle(this._setcurrentDate())) === this._dateToTime(this._replaceArr_.call(dateArr, 2, 1, i + 1)) })
                     }
                 }
-                /** 
-                 * 设置当前月份日期
-                 */
-            var setCurrentDateArr = function() {
-                for (var i = 0; i < days; i++) {
-                    data = (function(index) {
-                        return this._data(this._replaceArr_.call(dateArr, 2, 1, index + 1))
-                    }).call(this, i)
-                    currentDateArr.push({ data: data, dateType: 'current', today: this._dateToTime(this._dateHandle(this._setcurrentDate())) === this._dateToTime(this._replaceArr_.call(dateArr, 2, 1, i + 1)) })
-                }
+
+                setPrevDateArr.call(this)
+                setNextDateArr.call(this)
+                setCurrentDateArr.call(this)
+                    // console.log(prevDateArr, currentDateArr, nextDateArr)
+                return [].concat(prevDateArr, currentDateArr, nextDateArr)
             }
-
-            setPrevDateArr.call(this)
-            setNextDateArr.call(this)
-            setCurrentDateArr.call(this)
-                // console.log(prevDateArr, currentDateArr, nextDateArr)
-            return [].concat(prevDateArr, currentDateArr, nextDateArr)
-
-
-
+            var monthDataGen = function() {
+                var monthsArr = [];
+                for (var i = 0; i < 12; i++) {
+                    var data = (function(index) {
+                        return this._data(this._replaceArr_.call(dateArr, 1, 1, index))
+                    }).call(this, i)
+                    monthsArr.push({ data: data })
+                }
+                return monthsArr
+            }
+            var yearDateGen = function() {
+                    var yearArr = [],
+                        yearDataArr = [];
+                    for (var i = 5; i > 0; i--) {
+                        yearArr.push(dateArr[0] - i)
+                    }
+                    for (var i = 0; i < 7; i++) {
+                        yearArr.push(dateArr[0] + i)
+                    }
+                    for (var i = 0; i < yearArr.length; i++) {
+                        var data = (function(index) {
+                            return this._data(this._replaceArr_.call(dateArr, 0, 1, yearArr[index]))
+                        }).call(this, i)
+                        yearDataArr.push({ data: data })
+                    }
+                    return yearDataArr
+                }
+                // this._currentShowType = 'months'
+            switch (this._currentShowType) {
+                case 'days':
+                    dataArr = daysDataGen.call(this);
+                    break;
+                case 'months':
+                    dataArr = monthDataGen.call(this);
+                    break;
+                case 'years':
+                    dataArr = yearDateGen.call(this);
+                    break;
+            }
+            return { showType: this._currentShowType, dataArr: dataArr }
         },
         _view: function(dateArr) {
-            var dataArr = this._viewData(dateArr),
+            console.log(this._viewData(dateArr))
+            var dataObj = this._viewData(dateArr),
+                dataArr = dataObj.dataArr,
                 dayRenderFn = this.render || function(dateObj) {
                     return '<span>' + dateObj.day + '</span>'
                 },
                 htmlGen = function() {
-                    var html = '<tr><th>日</th><th>一</th><th>二</th><th>三</th><th>四</th><th>五</th><th>六</th></tr>';
-                    var tdGen = function(index) {
-                        var str = ''
-                        for (var i = 0; i < 7; i++) {
-                            str += '<td  class="date-node"  data-date-type="' + dataArr[index * 7 + i].dateType + '" data-date="' + dataArr[index * 7 + i].data.date + '" data-today="' + (dataArr[index * 7 + i].today ? true : false) + '">' + dayRenderFn(dataArr[index * 7 + i].data) + '</td>'
+                    var daysHtml = function() {
+                        var html = '<tr><th>日</th><th>一</th><th>二</th><th>三</th><th>四</th><th>五</th><th>六</th></tr>';
+                        var tdGen = function(index) {
+                            var str = ''
+                            for (var i = 0; i < 7; i++) {
+                                str += '<td  class="days-node"  data-date-type="' + dataArr[index * 7 + i].dateType + '" data-date="' + dataArr[index * 7 + i].data.date + '" data-today="' + (dataArr[index * 7 + i].today ? true : false) + '">' + dayRenderFn(dataArr[index * 7 + i].data) + '</td>'
+                            }
+                            return str
                         }
-                        return str
+                        for (var i = 0; i < dataArr.length / 7; i++) {
+                            html += '<tr>' +
+                                tdGen(i) +
+                                '</tr>'
+                        }
+                        return html
                     }
-                    for (var i = 0; i < dataArr.length / 7; i++) {
-                        html += '<tr>' +
-                            tdGen(i) +
-                            '</tr>'
+                    var monthsHtml = function() {
+                        var html = '';
+                        var tdGen = function(index) {
+                            var str = ''
+                            for (var i = 0; i < 4; i++) {
+                                str += '<td class="months-node" data-date="' + dataArr[index * 4 + i].data.date + '">' +
+                                    '<span>' + dataArr[index * 4 + i].data.month + '</span>' +
+                                    '</td>'
+                            }
+                            return str
+                        }
+                        for (var i = 0; i < dataArr.length / 4; i++) {
+                            html += '<tr>' +
+                                tdGen(i) +
+                                '</tr>'
+                        }
+                        return html
                     }
-                    return html
+                    var yearsHTML = function() {
+                        var html = '';
+                        var tdGen = function(index) {
+                            var str = ''
+                            for (var i = 0; i < 4; i++) {
+                                str += '<td class="years-node" data-date="' + dataArr[index * 4 + i].data.date + '">' +
+                                    '<span>' + dataArr[index * 4 + i].data.year + '</span>' +
+                                    '</td>'
+                            }
+                            return str
+                        }
+                        for (var i = 0; i < dataArr.length / 4; i++) {
+                            html += '<tr>' +
+                                tdGen(i) +
+                                '</tr>'
+                        }
+                        return html
+
+                    }
+                    switch (dataObj.showType) {
+                        case 'days':
+                            return daysHtml()
+                            break;
+                        case 'months':
+                            return monthsHtml()
+                            break;
+                        case 'years':
+                            return yearsHTML()
+                            break;
+                    }
                 };
 
             return htmlGen()
 
-            console.log(dateViewNode)
+
         },
         _next: function() {
+            var nextObj = {
+                days: [1, 1],
+                months: [0, 1],
+                years: [0, 5]
+            }
             var currentDateArr = this._dateHandle(this._setcurrentDate()),
-                nextDateArr = this._replaceArr_.call(currentDateArr, 1, 1, currentDateArr[1] + 1)
+                nextDateArr = this._replaceArr_.call(currentDateArr, nextObj[this._currentShowType][0], 1, currentDateArr[nextObj[this._currentShowType][0]] + nextObj[this._currentShowType][1])
             this._setcurrentDate(nextDateArr)
             this._init(nextDateArr)
 
 
 
-            this.nextCb && this.nextCb(this)
+            this._currentShowType === this.type && this.nextCb && this.nextCb(this)
         },
         _prev: function() {
+            var prevObj = {
+                days: [1, 1],
+                months: [0, 1],
+                years: [0, 5]
+            }
             var currentDateArr = this._dateHandle(this._setcurrentDate()),
-                prevDateArr = this._replaceArr_.call(currentDateArr, 1, 1, currentDateArr[1] - 1)
+                prevDateArr = this._replaceArr_.call(currentDateArr, prevObj[this._currentShowType][0], 1, currentDateArr[prevObj[this._currentShowType][0]] - prevObj[this._currentShowType][1])
             this._setcurrentDate(prevDateArr)
             this._init(prevDateArr)
 
-            this.prevCb && this.prevCb(this)
+            this._currentShowType === this.type && this.prevCb && this.prevCb(this)
         },
         _dateNode: function(dateNode) {
-            var clickDateArr = this._dateHandle(dateNode.dataset.date)
-            this._setcurrentDate(clickDateArr)
-            this._init(clickDateArr)
+            // console.log(dateNode.dataset.date)
+            var ifFinally = this._changeView('down', dateNode.dataset.date)
+            ifFinally && (function() {
+                var clickDateArr = this._dateHandle(dateNode.dataset.date)
+                this._setcurrentDate(clickDateArr)
+                this._init(clickDateArr)
+                this.nodeClickCb && this.nodeClickCb(dateNode, this)
+            }).call(this)
 
 
-
-            this.nodeClickCb && this.nodeClickCb(dateNode, this)
         },
         _eventBind: function() {
             var _this = this;
             _this._el_.addEventListener('click', function(e) {
-                console.log(e)
+                // console.log(e)
                 var eventTarget = e.target;
                 //搜索最近的父元素或自身
                 function closest(el, selector, stopSelector) {
@@ -206,13 +315,14 @@
                     }
                     return retval;
                 }
-                var dateNode = closest(eventTarget, '.date-node', '.date-picker-view-wrap');
+                var dateNode = closest(eventTarget, 'td', '.date-picker-view-wrap');
                 /** 
                  * 日期节点
                  */
                 if (dateNode) {
 
                     _this._dateNode(dateNode)
+
                 }
                 /** 
                  * 上个日期
@@ -221,13 +331,15 @@
                  */
                 if (eventTarget && eventTarget.classList.contains('prev-btn')) {
                     _this._prev()
+
                 }
                 if (eventTarget && eventTarget.classList.contains('next-btn')) {
                     _this._next()
+
                 }
 
                 if (eventTarget && eventTarget.classList.contains('current-date')) {
-                    _this._changeView()
+                    _this._changeView('up')
                 }
 
                 e.stopPropagation()
@@ -244,7 +356,7 @@
         getcurrentDate: function() {
             return this._data(this._dateHandle(this._setcurrentDate()))
         },
-        _dateFormat: function() {
+        _dateFormat: function(dateTime) {
             var date = new Date(dateTime),
                 year = date.getUTCFullYear(),
                 month = date.getUTCMonth(),
@@ -254,8 +366,39 @@
                 .replace('mm', month + 1 > 9 ? month + 1 : '0' + (month + 1))
                 .replace('dd', day > 9 ? day : '0' + day)
         },
-        _changeView: function() {
+        _changeView: function(handleType, dateString) {
+            var switchObj = {
+                days: 2,
+                months: 1,
+                years: 0,
+                2: 'days',
+                1: 'months',
+                0: 'years'
+            }
+            var dateArr = dateString ? this._dateHandle(dateString) : []
+            var upView = function() {
+                if (switchObj[this._currentShowType] === 0) {
+                    return true
+                }
+                var updateCurrentShowtype = switchObj[switchObj[this._currentShowType] - 1];
+                this._currentShowType = updateCurrentShowtype;
+                var currentDateArr = this._dateHandle(this._setcurrentDate())
+                this._init(currentDateArr)
+            }
+            var downView = function(data) {
+                if (switchObj[this._currentShowType] - switchObj[this.type] === 0) {
+                    return true
+                }
+                var updateCurrentShowtype = switchObj[switchObj[this._currentShowType] + 1];
+                var currentDateArr = this._dateHandle(this._setcurrentDate()),
+                    downDateArr = this._replaceArr_.call(currentDateArr, switchObj[this._currentShowType], 1, data)
+                this._currentShowType = updateCurrentShowtype;
+                this._setcurrentDate(downDateArr)
+                this._init(downDateArr)
 
+            }
+
+            return handleType === 'up' ? upView.call(this) : downView.call(this, dateArr[switchObj[this._currentShowType]])
         },
         _ifInput() {
             var elNode = document.querySelectorAll(this.el)[0],
@@ -269,13 +412,6 @@
             if (this._ifInput()) return basicStyle + 'width:' +
                 elNode.offsetWidth + 'px;'
             return basicStyle
-        },
-        _generateTemplate: function() {
-            switch (showType) {
-                case 'years':
-                case 'mouths':
-                    return ''
-            }
         },
         /**
          * 周期
@@ -308,7 +444,7 @@
                 viewWrap = this._el_.querySelectorAll('.date-picker-view-wrap')[0],
                 tableNode = viewWrap.querySelectorAll('table')[0];
             dateViewNode.innerHTML = this._view(dateArr)
-            console.log(tableNode)
+                // console.log(tableNode)
             if (!tableNode) { viewWrap.appendChild(dateViewNode) } else {
                 viewWrap.replaceChild(dateViewNode, tableNode)
             }
@@ -374,8 +510,8 @@
 
 var x = new window.componentLibrary.DatePicker({
     el: '#app',
-    customizeClass: 'my-date-picker'
-
+    customizeClass: 'my-date-picker',
+    type: 'months'
 
 
 })
@@ -386,7 +522,8 @@ new window.componentLibrary.DatePicker({
 
 })
 new window.componentLibrary.DatePicker({
-    customizeClass: 'my-date-picker'
+    customizeClass: 'my-date-picker',
+    type: 'years'
 
 
 })

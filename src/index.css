@@ -18,9 +18,12 @@
 .prev-btn,
 .next-btn,
 .current-date,
-.date-node {
+td {
     cursor: pointer;
     text-align: center;
+}
+.months-node, .years-node{
+    width:25%;
 }
 
 .date-picker-top-handle {
@@ -53,6 +56,6 @@
     width: 100%;
 }
 
-.date-node[data-today="true"] {
+.days-node[data-today="true"] {
     background-color: #286090;
 }
