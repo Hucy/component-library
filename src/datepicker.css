@@ -13,6 +13,7 @@
     padding: 4px;
     box-sizing: border-box;
     box-shadow: 0 6px 12px rgba(0, 0, 0, 0.175);
+    display:none;
 }
 
 .prev-btn,
@@ -56,6 +57,6 @@ td {
     width: 100%;
 }
 
-.days-node[data-today="true"] {
+td[data-today="true"] {
     background-color: #286090;
 }

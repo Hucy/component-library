@@ -35,7 +35,7 @@
         this.nextCb = this.option.nextCb || ''
         this.prevCb = this.option.prevCb || ''
         this.nodeClickCb = this.option.nodeClickCb || ''
-        this.nodeEventCb = this.option.nodeEventCb || ''
+        this.nodeEvent = this.option.nodeEvent || ''
         this.format = this.option.format || (function() {
             if (this.type === 'days') return 'yyyy-mm-dd'
             if (this.type === 'months') return 'yyyy-mm'
@@ -48,7 +48,6 @@
         constructor: DatePicker,
         _startUp: function() {
             this._beforeInit()
-            this._init(this._dateHandle(this._setcurrentDate()))
             this._inited()
         },
         _replaceArr_: function() {
@@ -99,7 +98,7 @@
                 day: dateArr[2]
             }
         },
-        _getDaysOfMonth(dateArr) {
+        _getDaysOfMonth: function(dateArr) {
             var currentMonthArr = this._replaceArr_.call(dateArr, 2, 1, 1),
                 nextMonthArr = this._replaceArr_.call(currentMonthArr, 1, 1, currentMonthArr[1] + 1),
                 days = (this._dateToTime(nextMonthArr) - this._dateToTime(currentMonthArr)) / (24 * 60 * 60 * 1000);
@@ -165,7 +164,7 @@
                     var data = (function(index) {
                         return this._data(this._replaceArr_.call(dateArr, 1, 1, index))
                     }).call(this, i)
-                    monthsArr.push({ data: data })
+                    monthsArr.push({ data: data, today: this._dateToTime(this._dateHandle(this._setcurrentDate())) === this._dateToTime(this._replaceArr_.call(dateArr, 1, 1, i)) })
                 }
                 return monthsArr
             }
@@ -182,7 +181,7 @@
                         var data = (function(index) {
                             return this._data(this._replaceArr_.call(dateArr, 0, 1, yearArr[index]))
                         }).call(this, i)
-                        yearDataArr.push({ data: data })
+                        yearDataArr.push({ data: data, today: this._dateToTime(this._dateHandle(this._setcurrentDate())) === this._dateToTime(this._replaceArr_.call(dateArr, 0, 1, yearArr[i])) })
                     }
                     return yearDataArr
                 }
@@ -230,7 +229,7 @@
                         var tdGen = function(index) {
                             var str = ''
                             for (var i = 0; i < 4; i++) {
-                                str += '<td class="months-node" data-date="' + dataArr[index * 4 + i].data.date + '">' +
+                                str += '<td class="months-node" data-date="' + dataArr[index * 4 + i].data.date + '" data-today="' + (dataArr[index * 4 + i].today ? true : false) + '">' +
                                     '<span>' + dataArr[index * 4 + i].data.month + '</span>' +
                                     '</td>'
                             }
@@ -248,7 +247,7 @@
                         var tdGen = function(index) {
                             var str = ''
                             for (var i = 0; i < 4; i++) {
-                                str += '<td class="years-node" data-date="' + dataArr[index * 4 + i].data.date + '">' +
+                                str += '<td class="years-node" data-date="' + dataArr[index * 4 + i].data.date + '" data-today="' + (dataArr[index * 4 + i].today ? true : false) + '">' +
                                     '<span>' + dataArr[index * 4 + i].data.year + '</span>' +
                                     '</td>'
                             }
@@ -289,9 +288,6 @@
                 nextDateArr = this._replaceArr_.call(currentDateArr, nextObj[this._currentShowType][0], 1, currentDateArr[nextObj[this._currentShowType][0]] + nextObj[this._currentShowType][1])
             this._setcurrentDate(nextDateArr)
             this._init(nextDateArr)
-
-
-
             this._currentShowType === this.type && this.nextCb && this.nextCb(this)
         },
         _prev: function() {
@@ -315,29 +311,28 @@
                 this._setcurrentDate(clickDateArr)
                 this._init(clickDateArr)
                 this.nodeClickCb && this.nodeClickCb(dateNode, this)
+                this.hide()
             }).call(this)
-
-
         },
         _eventBind: function() {
             var _this = this;
+            //搜索最近的父元素或自身
+            function closest(el, selector, stopSelector) {
+                var retval = null;
+                while (el) {
+                    if (el.matches(selector)) {
+                        retval = el;
+                        break
+                    } else if (stopSelector && el.matches(stopSelector)) {
+                        break
+                    }
+                    el = el.parentElement;
+                }
+                return retval;
+            }
             _this._el_.addEventListener('click', function(e) {
                 // console.log(e)
                 var eventTarget = e.target;
-                //搜索最近的父元素或自身
-                function closest(el, selector, stopSelector) {
-                    var retval = null;
-                    while (el) {
-                        if (el.matches(selector)) {
-                            retval = el;
-                            break
-                        } else if (stopSelector && el.matches(stopSelector)) {
-                            break
-                        }
-                        el = el.parentElement;
-                    }
-                    return retval;
-                }
                 var dateNode = closest(eventTarget, 'td', '.date-picker-view-wrap');
                 /** 
                  * 日期节点
@@ -367,6 +362,19 @@
 
                 e.stopPropagation()
             }, false)
+            if (this.nodeEvent) {
+                for (var event in this.nodeEvent) {
+                    _this._el_.addEventListener(event, function(e) {
+                        var eventTarget = e.target;
+                        var dateNode = closest(eventTarget, 'td', '.date-picker-view-wrap');
+                        if (dateNode && _this.type === _this._currentShowType) {
+
+                            _this.nodeEvent[event](dateNode, e, this)
+
+                        }
+                    })
+                }
+            }
         },
         _setcurrentDate: function(dateArr) {
             var nowTime = new Date().getTime()
@@ -423,7 +431,7 @@
 
             return handleType === 'up' ? upView.call(this) : downView.call(this, dateArr[switchObj[this._currentShowType]])
         },
-        _ifInput() {
+        _ifInput: function() {
             var elNode = document.querySelectorAll(this.el)[0],
                 ifInput = elNode.tagName.toLowerCase() === 'input'
             return ifInput
@@ -440,14 +448,16 @@
          * 周期
          */
         _beforeInit: function() {
+
             var _this_ = this,
                 elNode = document.querySelectorAll(this.el)[0],
                 datePickerWrap =
                 '<div class="date-picker-top-handle"><i class="prev-btn">&lsaquo;</i><sapn class="current-date">' +
                 this._setcurrentDate() +
                 '</sapn><i class="next-btn">&rsaquo;</i></div>' +
-                '<div class="date-picker-view-wrap"></div>',
-                datePickerWrapNode = document.createElement('div');
+                '<div class="date-picker-view-wrap"></div>';
+            this.beforeInit && this.beforeInit(this)
+            datePickerWrapNode = document.createElement('div');
             datePickerWrapNode.classList.add('date-picker-wrap', this.customizeClass)
             datePickerWrapNode.setAttribute('style', this._setInitStyle())
             datePickerWrapNode.innerHTML = datePickerWrap
@@ -459,10 +469,8 @@
                     _this_.show()
                 })
             }
-
-
         },
-        _init(dateArr) {
+        _init: function(dateArr) {
             var dateViewNode = document.createElement('table'),
                 viewWrap = this._el_.querySelectorAll('.date-picker-view-wrap')[0],
                 tableNode = viewWrap.querySelectorAll('table')[0];
@@ -475,81 +483,44 @@
         },
         _inited: function() {
             this._eventBind()
+            this.inited && this.inited(this._el_, this)
         },
         _beforeDestroy: function() {
-
+            this.beforeDestroy && this.beforeDestroy(this)
         },
         _destroyed: function() {
-
+            var _this = this,
+                elNode = document.querySelectorAll(this.el)[0];
+            if (this.el !== 'body') {
+                elNode.removeEventListener('click', function() {
+                    _this_.show()
+                })
+            }
+            document.getElementsByTagName('body')[0].removeChild(this._el_);
+            this.destroyed && this.destroyed(this)
         },
         /** 
          * 实例方法
          */
         show: function() {
-
+            this._init(this._dateHandle(this._setcurrentDate()))
+            this._el_.style.display = 'block'
         },
         hide: function() {
-
+            this._el_.style.display = 'none';
         },
         remove: function() {
-
+            this._beforeDestroy()
+            this._destroyed()
         },
         next: function() {
-
+            this._next()
         },
         prev: function() {
-
+            this._prev()
         }
-
-
-
-
-
     }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
     return {
         DatePicker: DatePicker
     };
 }));
-
-
-
-var x = new window.componentLibrary.DatePicker({
-    el: '#app',
-    customizeClass: 'my-date-picker',
-    type: 'months',
-
-
-
-})
-var data = [1, 2, 3, 4, 2, 5, 2]
-new window.componentLibrary.DatePicker({
-    el: '#btn',
-    customizeClass: 'my-date-picker',
-    data: data
-
-
-})
-new window.componentLibrary.DatePicker({
-    customizeClass: 'my-date-picker',
-    type: 'years',
-
-
-})

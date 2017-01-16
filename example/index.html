@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <title>Document</title>
-    <link href="../src/index.css" rel="stylesheet" type="text/css">
+    <link href="../src/datepicker.css" rel="stylesheet" type="text/css">
 </head>
 
 <body>
@@ -16,10 +16,36 @@
 
     </div>
     <button type="" id="btn"></button>
-
-
-
-    <script src="../src/index.js">
+    <script src="../src/datepicker.js">
+    </script>
+    <script>
+        var x = new window.componentLibrary.DatePicker({
+            el: '#app',
+            customizeClass: 'my-date-picker',
+            type: 'months',
+            nodeEvent: {
+                'mouseenter': function(node, e, _this) {
+                    console.log(node, e, _this)
+                },
+                "mouseover": function(node, e, _this) {
+                    console.log(node,
+                        e, _this)
+                },
+                'mousemove': function(node, e, _this) {
+                    console.log(node, e, _this)
+                }
+            }
+        })
+        var data = [1, 2, 3, 4, 2, 5, 2]
+        new window.componentLibrary.DatePicker({
+            el: '#btn',
+            customizeClass: 'my-date-picker',
+            data: data
+        })
+        new window.componentLibrary.DatePicker({
+            customizeClass: 'my-date-picker',
+            type: 'years',
+        })
     </script>
 </body>
 
