@@ -18,7 +18,6 @@
     // This example returns an object, but the module
     // can return a function as the exported value.
     var DatePicker = function(paramObj) {
-
         this.option = paramObj || {}
         this.el = this.option.el || 'body'
         this.type = this.option.type || 'days'
@@ -28,6 +27,7 @@
         this.maxDate = this.option.maxDate || ''
         this.minDate = this.option.minDate || ''
         this.render = this.option.render || ''
+        this.data = this.option.data || []
         this.beforeInit = this.option.beforeInit || ''
         this.inited = this.option.inited || ''
         this.beforeDestroy = this.option.beforeDestroy || ''
@@ -36,7 +36,11 @@
         this.prevCb = this.option.prevCb || ''
         this.nodeClickCb = this.option.nodeClickCb || ''
         this.nodeEventCb = this.option.nodeEventCb || ''
-        this.format = this.option.format || 'yyyy-mm-dd'
+        this.format = this.option.format || (function() {
+            if (this.type === 'days') return 'yyyy-mm-dd'
+            if (this.type === 'months') return 'yyyy-mm'
+            return 'yyyy'
+        }).call(this)
         this._startUp()
     }
 
@@ -56,15 +60,33 @@
          * 统一的时间处理
          */
         _dateHandle: function(dateString) {
-            var dateRegExp = new RegExp(this.format
-                .replace('yyyy', '([0-9]{4})')
-                .replace('mm', '([0-9]{2})')
-                .replace('dd', '([0-9]{2})'))
-            var originDateArr = dateString.match(dateRegExp).slice(1, 4)
-            originDateArr.splice(1, 1, originDateArr[1] - 1)
-            originDateArr.splice(0, 1, originDateArr[0] - 0)
-            originDateArr.splice(2, 1, originDateArr[2] - 0)
-            return originDateArr
+            var orderObj = {}
+            var formatArr = (function() {
+                switch (this.type) {
+                    case 'years':
+                        orderObj = {
+                            yyyy: this.format.indexOf('yyyy')
+                        }
+                        return [dateString.substr(orderObj.yyyy, 4) - 0, 0, 1]
+
+                    case 'months':
+                        orderObj = {
+                            yyyy: this.format.indexOf('yyyy'),
+                            mm: this.format.indexOf('mm')
+                        }
+                        return [dateString.substr(orderObj.yyyy, 4) - 0, dateString.substr(orderObj.mm, 2) - 1, 1]
+
+                    case 'days':
+                        orderObj = {
+                            yyyy: this.format.indexOf('yyyy'),
+                            mm: this.format.indexOf('mm'),
+                            dd: this.format.indexOf('dd')
+                        }
+                        return [dateString.substr(orderObj.yyyy, 4) - 0, dateString.substr(orderObj.mm, 2) - 1, dateString.substr(orderObj.dd, 2) - 0]
+
+                }
+            }).call(this)
+            return formatArr
         },
         _dateToTime: function(dateArr) {
             return Date.UTC.apply(Date, dateArr.concat([0, 0, 0, 0]))
@@ -84,7 +106,7 @@
             return days
         },
         _viewData: function(dateArr) {
-            console.log(dateArr)
+            // console.log(dateArr)
             var dataArr = [],
                 _this = this
             var daysDataGen = function() {
@@ -179,9 +201,10 @@
             return { showType: this._currentShowType, dataArr: dataArr }
         },
         _view: function(dateArr) {
-            console.log(this._viewData(dateArr))
+            // console.log(this._viewData(dateArr))
             var dataObj = this._viewData(dateArr),
                 dataArr = dataObj.dataArr,
+                customizeData = this.data,
                 dayRenderFn = this.render || function(dateObj) {
                     return '<span>' + dateObj.day + '</span>'
                 },
@@ -191,7 +214,7 @@
                         var tdGen = function(index) {
                             var str = ''
                             for (var i = 0; i < 7; i++) {
-                                str += '<td  class="days-node"  data-date-type="' + dataArr[index * 7 + i].dateType + '" data-date="' + dataArr[index * 7 + i].data.date + '" data-today="' + (dataArr[index * 7 + i].today ? true : false) + '">' + dayRenderFn(dataArr[index * 7 + i].data) + '</td>'
+                                str += '<td  class="days-node"  data-date-type="' + dataArr[index * 7 + i].dateType + '" data-date="' + dataArr[index * 7 + i].data.date + '" data-today="' + (dataArr[index * 7 + i].today ? true : false) + '">' + dayRenderFn(dataArr[index * 7 + i].data, customizeData[index * 7 + i]) + '</td>'
                             }
                             return str
                         }
@@ -511,19 +534,22 @@
 var x = new window.componentLibrary.DatePicker({
     el: '#app',
     customizeClass: 'my-date-picker',
-    type: 'months'
+    type: 'months',
+
 
 
 })
+var data = [1, 2, 3, 4, 2, 5, 2]
 new window.componentLibrary.DatePicker({
     el: '#btn',
-    customizeClass: 'my-date-picker'
+    customizeClass: 'my-date-picker',
+    data: data
 
 
 })
 new window.componentLibrary.DatePicker({
     customizeClass: 'my-date-picker',
-    type: 'years'
+    type: 'years',
 
 
 })
