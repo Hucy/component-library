@@ -13,7 +13,6 @@
         root.componentLibrary = factory();
     }
 }(this, function() {
-
     // Just return a value to define the module export.
     // This example returns an object, but the module
     // can return a function as the exported value.
@@ -81,7 +80,8 @@
                             mm: this.format.indexOf('mm'),
                             dd: this.format.indexOf('dd')
                         }
-                        return [dateString.substr(orderObj.yyyy, 4) - 0, dateString.substr(orderObj.mm, 2) - 1, dateString.substr(orderObj.dd, 2) - 0]
+                        var daysArr = [dateString.substr(orderObj.yyyy, 4) - 0, dateString.substr(orderObj.mm, 2) - 1, dateString.substr(orderObj.dd, 2) - 0]
+                        return this._replaceArr_.call(daysArr, 2, 1, daysArr[2] > this._getDaysOfMonth([daysArr[0], daysArr[1], 1]) ? 1 : daysArr[2])
 
                 }
             }).call(this)
@@ -103,6 +103,17 @@
                 nextMonthArr = this._replaceArr_.call(currentMonthArr, 1, 1, currentMonthArr[1] + 1),
                 days = (this._dateToTime(nextMonthArr) - this._dateToTime(currentMonthArr)) / (24 * 60 * 60 * 1000);
             return days
+        },
+        _ifAllowDateRange: function(dateArr) {
+            var minDateArr = this.minDate.getcurrentDate ? this.minDate.getcurrentDate() : this._dateHandle(this.minDate),
+                maxDateArr = this.maxDate.getcurrentDate ? this.maxDate.getcurrentDate() : this._dateHandle(this.maxDate),
+                minTime = this._dateToTime(minDateArr),
+                maxTime = this._dateToTime(maxDateArr),
+                currentTime = this._dateToTime(this.getcurrentDate());
+
+
+            return minTime <= currentTime && maxTime >= currentTime
+
         },
         _viewData: function(dateArr) {
             // console.log(dateArr)
@@ -162,7 +173,7 @@
                 var monthsArr = [];
                 for (var i = 0; i < 12; i++) {
                     var data = (function(index) {
-                        return this._data(this._replaceArr_.call(dateArr, 1, 1, index))
+                        return this._data(this._realDateArr(this._replaceArr_.call(dateArr, 1, 1, index)))
                     }).call(this, i)
                     monthsArr.push({ data: data, today: this._dateToTime(this._dateHandle(this._setcurrentDate())) === this._dateToTime(this._replaceArr_.call(dateArr, 1, 1, i)) })
                 }
@@ -186,6 +197,7 @@
                     return yearDataArr
                 }
                 // this._currentShowType = 'months'
+
             switch (this._currentShowType) {
                 case 'days':
                     dataArr = daysDataGen.call(this);
@@ -198,6 +210,8 @@
                     break;
             }
             return { showType: this._currentShowType, dataArr: dataArr }
+
+
         },
         _view: function(dateArr) {
             // console.log(this._viewData(dateArr))
@@ -278,6 +292,12 @@
 
 
         },
+        _realDateArr: function(dateArr) {
+            if (dateArr[2] <= this._getDaysOfMonth([dateArr[0], dateArr[1], 1])) {
+                return dateArr
+            }
+            return [dateArr[0], dateArr[1], this._getDaysOfMonth([dateArr[0], dateArr[1], 1])]
+        },
         _next: function() {
             var nextObj = {
                 days: [1, 1],
@@ -286,8 +306,8 @@
             }
             var currentDateArr = this._dateHandle(this._setcurrentDate()),
                 nextDateArr = this._replaceArr_.call(currentDateArr, nextObj[this._currentShowType][0], 1, currentDateArr[nextObj[this._currentShowType][0]] + nextObj[this._currentShowType][1])
-            this._setcurrentDate(nextDateArr)
-            this._init(nextDateArr)
+                // this._setcurrentDate(nextDateArr)
+            this._init(this._realDateArr(nextDateArr))
             this._currentShowType === this.type && this.nextCb && this.nextCb(this)
         },
         _prev: function() {
@@ -297,10 +317,9 @@
                 years: [0, 5]
             }
             var currentDateArr = this._dateHandle(this._setcurrentDate()),
-                prevDateArr = this._replaceArr_.call(currentDateArr, prevObj[this._currentShowType][0], 1, currentDateArr[prevObj[this._currentShowType][0]] - prevObj[this._currentShowType][1])
-            this._setcurrentDate(prevDateArr)
-            this._init(prevDateArr)
-
+                prevDateArr = this._replaceArr_.call(currentDateArr, prevObj[this._currentShowType][0], 1, currentDateArr[prevObj[this._currentShowType][0]] - prevObj[this._currentShowType][1]);
+            // this._setcurrentDate(prevDateArr)
+            this._init(this._realDateArr(prevDateArr));
             this._currentShowType === this.type && this.prevCb && this.prevCb(this)
         },
         _dateNode: function(dateNode) {
@@ -308,10 +327,10 @@
             var ifFinally = this._changeView('down', dateNode.dataset.date)
             ifFinally && (function() {
                 var clickDateArr = this._dateHandle(dateNode.dataset.date)
-                this._setcurrentDate(clickDateArr)
+                    // this._setcurrentDate(clickDateArr)
                 this._init(clickDateArr)
                 this.nodeClickCb && this.nodeClickCb(dateNode, this)
-                this.hide()
+                    // this.hide()
             }).call(this)
         },
         _eventBind: function() {
@@ -385,7 +404,7 @@
             return this.currentDate
         },
         getcurrentDate: function() {
-            return this._data(this._dateHandle(this._setcurrentDate()))
+            return this._dateHandle(this._setcurrentDate())
         },
         _dateFormat: function(dateTime) {
             var date = new Date(dateTime),
@@ -422,10 +441,9 @@
                 }
                 var updateCurrentShowtype = switchObj[switchObj[this._currentShowType] + 1];
                 var currentDateArr = this._dateHandle(this._setcurrentDate()),
-                    downDateArr = this._replaceArr_.call(currentDateArr, switchObj[this._currentShowType], 1, data)
+                    downDateArr = this._replaceArr_.call(currentDateArr, switchObj[this._currentShowType], 1, data);
                 this._currentShowType = updateCurrentShowtype;
-                this._setcurrentDate(downDateArr)
-                this._init(downDateArr)
+                this._init(this._realDateArr(downDateArr))
 
             }
 
@@ -474,6 +492,7 @@
             var dateViewNode = document.createElement('table'),
                 viewWrap = this._el_.querySelectorAll('.date-picker-view-wrap')[0],
                 tableNode = viewWrap.querySelectorAll('table')[0];
+            this._setcurrentDate(dateArr)
             dateViewNode.innerHTML = this._view(dateArr)
                 // console.log(tableNode)
             if (!tableNode) { viewWrap.appendChild(dateViewNode) } else {

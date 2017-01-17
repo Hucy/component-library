@@ -22,19 +22,7 @@
         var x = new window.componentLibrary.DatePicker({
             el: '#app',
             customizeClass: 'my-date-picker',
-            type: 'months',
-            nodeEvent: {
-                'mouseenter': function(node, e, _this) {
-                    console.log(node, e, _this)
-                },
-                "mouseover": function(node, e, _this) {
-                    console.log(node,
-                        e, _this)
-                },
-                'mousemove': function(node, e, _this) {
-                    console.log(node, e, _this)
-                }
-            }
+            type: 'months'
         })
         var data = [1, 2, 3, 4, 2, 5, 2]
         new window.componentLibrary.DatePicker({
