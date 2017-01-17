@@ -23,8 +23,10 @@ td {
     cursor: pointer;
     text-align: center;
 }
-.months-node, .years-node{
-    width:25%;
+
+.months-node,
+.years-node {
+    width: 25%;
 }
 
 .date-picker-top-handle {
@@ -55,6 +57,10 @@ td {
 
 .date-picker-view-wrap table {
     width: 100%;
+}
+
+td[data-allow=false] {
+    background: #eee;
 }
 
 td[data-today="true"] {

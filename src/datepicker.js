@@ -47,6 +47,7 @@
         constructor: DatePicker,
         _startUp: function() {
             this._beforeInit()
+            this.show()
             this._inited()
         },
         _replaceArr_: function() {
@@ -80,8 +81,8 @@
                             mm: this.format.indexOf('mm'),
                             dd: this.format.indexOf('dd')
                         }
-                        var daysArr = [dateString.substr(orderObj.yyyy, 4) - 0, dateString.substr(orderObj.mm, 2) - 1, dateString.substr(orderObj.dd, 2) - 0]
-                        return this._replaceArr_.call(daysArr, 2, 1, daysArr[2] > this._getDaysOfMonth([daysArr[0], daysArr[1], 1]) ? 1 : daysArr[2])
+
+                        return this._realDateArr([dateString.substr(orderObj.yyyy, 4) - 0, dateString.substr(orderObj.mm, 2) - 1, dateString.substr(orderObj.dd, 2) - 0])
 
                 }
             }).call(this)
@@ -104,15 +105,38 @@
                 days = (this._dateToTime(nextMonthArr) - this._dateToTime(currentMonthArr)) / (24 * 60 * 60 * 1000);
             return days
         },
-        _ifAllowDateRange: function(dateArr) {
-            var minDateArr = this.minDate.getcurrentDate ? this.minDate.getcurrentDate() : this._dateHandle(this.minDate),
-                maxDateArr = this.maxDate.getcurrentDate ? this.maxDate.getcurrentDate() : this._dateHandle(this.maxDate),
-                minTime = this._dateToTime(minDateArr),
-                maxTime = this._dateToTime(maxDateArr),
-                currentTime = this._dateToTime(this.getcurrentDate());
+        _ifAllowDateRange: function(dateArr, ifData) {
+            var setRangeDateArr = function(date) {
+                    if (date) {
+                        if (date.getcurrentDate) return date.getcurrentDate
+                        return this._dateHandle(date)
+                    } else {
+                        return dateArr
+                    }
+                },
+                ifAllow = function(min, current, max) {
+                    var minTime = this._dateToTime(min),
+                        maxTime = this._dateToTime(max),
+                        currentTime = this._dateToTime(current);
+                    if (ifData) {
+                        return [minTime <= currentTime && maxTime >= currentTime, min, current, max]
+                    } else {
+                        return minTime <= currentTime && maxTime >= currentTime
+                    }
 
-
-            return minTime <= currentTime && maxTime >= currentTime
+                },
+                minDateArr = setRangeDateArr.call(this, this.minDate),
+                maxDateArr = setRangeDateArr.call(this, this.maxDate);
+            if (this._currentShowType === this.type) {
+                return ifAllow.call(this, minDateArr, dateArr, maxDateArr)
+            } else {
+                switch (this._currentShowType) {
+                    case 'months':
+                        return ifAllow.call(this, [minDateArr[0], minDateArr[1], 1], [dateArr[0], dateArr[1], 1], [maxDateArr[0], maxDateArr[1], 1])
+                    case 'years':
+                        return ifAllow.call(this, [minDateArr[0], 0, 1], [dateArr[0], 0, 1], [maxDateArr[0], 0, 1])
+                }
+            }
 
         },
         _viewData: function(dateArr) {
@@ -137,7 +161,7 @@
                             var data = (function(index) {
                                 return this._data(this._replaceArr_.call(dateArr, 1, 2, dateArr[1] - 1, index))
                             }).call(this, this._getDaysOfMonth(this._replaceArr_.call(dateArr, 1, 1, dateArr[1] - 1)) - i)
-                            prevDateArr.push({ data: data, dateType: 'prev' })
+                            prevDateArr.push({ data: data, dateType: 'prev', ifAllow: this._ifAllowDateRange([dateArr[0], dateArr[1] - 1, this._getDaysOfMonth([dateArr[0], dateArr[1] - 1, 1]) - i]) })
                         }
                     }
                     /** 
@@ -148,7 +172,7 @@
                             var data = (function(index) {
                                 return this._data(this._replaceArr_.call(dateArr, 1, 2, dateArr[1] + 1, index + 1))
                             }).call(this, i)
-                            nextDateArr.push({ data: data, dateType: 'next' })
+                            nextDateArr.push({ data: data, dateType: 'next', ifAllow: this._ifAllowDateRange([dateArr[0], dateArr[1] + 1, i + 1]) })
                         }
                     }
                     /** 
@@ -159,7 +183,7 @@
                         var data = (function(index) {
                             return this._data(this._replaceArr_.call(dateArr, 2, 1, index + 1))
                         }).call(this, i)
-                        currentDateArr.push({ data: data, dateType: 'current', today: this._dateToTime(this._dateHandle(this._setcurrentDate())) === this._dateToTime(this._replaceArr_.call(dateArr, 2, 1, i + 1)) })
+                        currentDateArr.push({ data: data, dateType: 'current', today: this._dateToTime(this._dateHandle(this._setcurrentDate())) === this._dateToTime(this._replaceArr_.call(dateArr, 2, 1, i + 1)), ifAllow: this._ifAllowDateRange([dateArr[0], dateArr[1], i + 1]) })
                     }
                 }
 
@@ -175,7 +199,11 @@
                     var data = (function(index) {
                         return this._data(this._realDateArr(this._replaceArr_.call(dateArr, 1, 1, index)))
                     }).call(this, i)
-                    monthsArr.push({ data: data, today: this._dateToTime(this._dateHandle(this._setcurrentDate())) === this._dateToTime(this._replaceArr_.call(dateArr, 1, 1, i)) })
+                    monthsArr.push({
+                        data: data,
+                        today: this._dateToTime(this._dateHandle(this._setcurrentDate())) === this._dateToTime(this._replaceArr_.call(dateArr, 1, 1, i)),
+                        ifAllow: this._ifAllowDateRange([dateArr[0], i, dateArr[2]])
+                    })
                 }
                 return monthsArr
             }
@@ -192,7 +220,11 @@
                         var data = (function(index) {
                             return this._data(this._replaceArr_.call(dateArr, 0, 1, yearArr[index]))
                         }).call(this, i)
-                        yearDataArr.push({ data: data, today: this._dateToTime(this._dateHandle(this._setcurrentDate())) === this._dateToTime(this._replaceArr_.call(dateArr, 0, 1, yearArr[i])) })
+                        yearDataArr.push({
+                            data: data,
+                            today: this._dateToTime(this._dateHandle(this._setcurrentDate())) === this._dateToTime(this._replaceArr_.call(dateArr, 0, 1, yearArr[i])),
+                            ifAllow: this._ifAllowDateRange([yearArr[i], dateArr[1], dateArr[2]])
+                        })
                     }
                     return yearDataArr
                 }
@@ -210,8 +242,6 @@
                     break;
             }
             return { showType: this._currentShowType, dataArr: dataArr }
-
-
         },
         _view: function(dateArr) {
             // console.log(this._viewData(dateArr))
@@ -227,7 +257,7 @@
                         var tdGen = function(index) {
                             var str = ''
                             for (var i = 0; i < 7; i++) {
-                                str += '<td  class="days-node"  data-date-type="' + dataArr[index * 7 + i].dateType + '" data-date="' + dataArr[index * 7 + i].data.date + '" data-today="' + (dataArr[index * 7 + i].today ? true : false) + '">' + dayRenderFn(dataArr[index * 7 + i].data, customizeData[index * 7 + i]) + '</td>'
+                                str += '<td  class="days-node"  data-date-type="' + dataArr[index * 7 + i].dateType + '" data-date="' + dataArr[index * 7 + i].data.date + '" data-today="' + (dataArr[index * 7 + i].today ? true : false) + '"  data-allow="' + (dataArr[index * 7 + i].ifAllow ? true : false) + '">' + dayRenderFn(dataArr[index * 7 + i].data, customizeData[index * 7 + i]) + '</td>'
                             }
                             return str
                         }
@@ -243,7 +273,7 @@
                         var tdGen = function(index) {
                             var str = ''
                             for (var i = 0; i < 4; i++) {
-                                str += '<td class="months-node" data-date="' + dataArr[index * 4 + i].data.date + '" data-today="' + (dataArr[index * 4 + i].today ? true : false) + '">' +
+                                str += '<td class="months-node" data-date="' + dataArr[index * 4 + i].data.date + '" data-today="' + (dataArr[index * 4 + i].today ? true : false) + '" data-allow="' + (dataArr[index * 4 + i].ifAllow ? true : false) + '">' +
                                     '<span>' + dataArr[index * 4 + i].data.month + '</span>' +
                                     '</td>'
                             }
@@ -261,7 +291,7 @@
                         var tdGen = function(index) {
                             var str = ''
                             for (var i = 0; i < 4; i++) {
-                                str += '<td class="years-node" data-date="' + dataArr[index * 4 + i].data.date + '" data-today="' + (dataArr[index * 4 + i].today ? true : false) + '">' +
+                                str += '<td class="years-node" data-date="' + dataArr[index * 4 + i].data.date + '" data-today="' + (dataArr[index * 4 + i].today ? true : false) + '" data-allow="' + (dataArr[index * 4 + i].ifAllow ? true : false) + '">' +
                                     '<span>' + dataArr[index * 4 + i].data.year + '</span>' +
                                     '</td>'
                             }
@@ -323,15 +353,18 @@
             this._currentShowType === this.type && this.prevCb && this.prevCb(this)
         },
         _dateNode: function(dateNode) {
-            // console.log(dateNode.dataset.date)
-            var ifFinally = this._changeView('down', dateNode.dataset.date)
-            ifFinally && (function() {
-                var clickDateArr = this._dateHandle(dateNode.dataset.date)
-                    // this._setcurrentDate(clickDateArr)
-                this._init(clickDateArr)
-                this.nodeClickCb && this.nodeClickCb(dateNode, this)
-                    // this.hide()
-            }).call(this)
+            // console.log(dateNode.dataset.allow === 'true')
+            if (dateNode.dataset.allow === 'true') {
+                var ifFinally = this._changeView('down', dateNode.dataset.date)
+                ifFinally && (function() {
+                    var clickDateArr = this._dateHandle(dateNode.dataset.date)
+                        // this._setcurrentDate(clickDateArr)
+                    this._init(clickDateArr)
+                    this.nodeClickCb && this.nodeClickCb(dateNode, this)
+                        // this.hide()
+                }).call(this)
+            }
+
         },
         _eventBind: function() {
             var _this = this;
@@ -489,6 +522,15 @@
             }
         },
         _init: function(dateArr) {
+            var dateArr = dateArr
+            var ifAllowData = this._ifAllowDateRange(dateArr, true)
+            if (ifAllowData[0] === false) {
+                if (this._dateToTime(ifAllowData[1]) > this._dateToTime(ifAllowData[2])) {
+                    dateArr = ifAllowData[1]
+                } else {
+                    dateArr = ifAllowData[3]
+                }
+            }
             var dateViewNode = document.createElement('table'),
                 viewWrap = this._el_.querySelectorAll('.date-picker-view-wrap')[0],
                 tableNode = viewWrap.querySelectorAll('table')[0];
