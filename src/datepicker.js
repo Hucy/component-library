@@ -499,12 +499,13 @@
                 this._setcurrentDate() +
                 '</sapn><i class="next-btn">&rsaquo;</i></div>' +
                 '<div class="date-picker-view-wrap"></div>';
-            this.beforeInit && this.beforeInit(this)
+
             datePickerWrapNode = document.createElement('div');
             datePickerWrapNode.classList.add('date-picker-wrap', this.customizeClass)
             datePickerWrapNode.setAttribute('style', this._setInitStyle())
             datePickerWrapNode.innerHTML = datePickerWrap
             this._el_ = datePickerWrapNode;
+            this.beforeInit && this.beforeInit(this)
             document.getElementsByTagName('body')[0].appendChild(datePickerWrapNode);
             //绑定事件到挂载点,若无挂载点则需调用show方法打开控件
             if (this.el !== 'body') {
@@ -549,7 +550,7 @@
             this.inited && this.inited(this._el_, this)
         },
         _beforeDestroy: function() {
-            this.beforeDestroy && this.beforeDestroy(this)
+            this.beforeDestroy && this.beforeDestroy(this._el_, this)
         },
         _destroyed: function() {
             var _this = this,
