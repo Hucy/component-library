@@ -22,6 +22,7 @@
   + 初始日期,默认为当期日期,取值为:
     * 格式化后的日期,以设置的格式化为准
   + 最大和最小日期:
+    * 格式化后的日期,以设置的格式化为准
     * 联动取值绑定另一个日期选择器
   + 格式化,默认`yyyy-mm-dd`
 - 节点模板:
@@ -60,7 +61,8 @@
   + `prevCb`上一个日期
   + `nodeClickCb(dateObj)` 节点点击事件
   + `nodeEventCb({eventType:cb})`节点事件绑定
-  ## 选项说明
+  
+## 选项说明
 
   ```js
   new window.componentLibrary.DatePicker({
