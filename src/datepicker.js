@@ -21,12 +21,12 @@
         this.el = this.option.el || 'body'
         this.type = this.option.type || 'days'
         this._currentShowType = this.type
-        this.customizeClass = this.option.customizeClass || ''
+        this.customizeClass = this.option.customizeClass || 'date-picker-defalut'
         this.currentDate = this.option.currentDate || ''
         this.maxDate = this.option.maxDate || ''
         this.minDate = this.option.minDate || ''
         this.render = this.option.render || ''
-        this.data = this.option.data || []
+        this.data = this.option.data || ''
         this.beforeInit = this.option.beforeInit || ''
         this.inited = this.option.inited || ''
         this.beforeDestroy = this.option.beforeDestroy || ''
@@ -47,7 +47,6 @@
         constructor: DatePicker,
         _startUp: function() {
             this._beforeInit()
-            this.show()
             this._inited()
         },
         _replaceArr_: function() {
@@ -108,7 +107,7 @@
         _ifAllowDateRange: function(dateArr, ifData) {
             var setRangeDateArr = function(date) {
                     if (date) {
-                        if (date.getcurrentDate) return date.getcurrentDate
+                        if (date.getcurrentDate) return date.getcurrentDate()
                         return this._dateHandle(date)
                     } else {
                         return dateArr
@@ -243,84 +242,77 @@
             }
             return { showType: this._currentShowType, dataArr: dataArr }
         },
-        _view: function(dateArr) {
+        _view: function(dataObj) {
             // console.log(this._viewData(dateArr))
-            var dataObj = this._viewData(dateArr),
-                dataArr = dataObj.dataArr,
-                customizeData = this.data,
-                dayRenderFn = this.render || function(dateObj) {
-                    return '<span>' + dateObj.day + '</span>'
-                },
-                htmlGen = function() {
-                    var daysHtml = function() {
-                        var html = '<tr><th>日</th><th>一</th><th>二</th><th>三</th><th>四</th><th>五</th><th>六</th></tr>';
-                        var tdGen = function(index) {
-                            var str = ''
-                            for (var i = 0; i < 7; i++) {
-                                str += '<td  class="days-node"  data-date-type="' + dataArr[index * 7 + i].dateType + '" data-date="' + dataArr[index * 7 + i].data.date + '" data-today="' + (dataArr[index * 7 + i].today ? true : false) + '"  data-allow="' + (dataArr[index * 7 + i].ifAllow ? true : false) + '">' + dayRenderFn(dataArr[index * 7 + i].data, customizeData[index * 7 + i]) + '</td>'
-                            }
-                            return str
-                        }
-                        for (var i = 0; i < dataArr.length / 7; i++) {
-                            html += '<tr>' +
-                                tdGen(i) +
-                                '</tr>'
-                        }
-                        return html
+            var dataArr = dataObj.dataArr;
+            var customizeData = this._customizedata
+            var dayRenderFn = this.render || function(dateObj) {
+                return '<span>' + dateObj.day + '</span>'
+            };
+            var daysHtml = function() {
+                var html = '<tr><th>日</th><th>一</th><th>二</th><th>三</th><th>四</th><th>五</th><th>六</th></tr>';
+                var tdGen = function(index) {
+                    var str = ''
+                    for (var i = 0; i < 7; i++) {
+                        str += '<td  class="days-node"  data-date-type="' + dataArr[index * 7 + i].dateType + '" data-date="' + dataArr[index * 7 + i].data.date + '" data-today="' + (dataArr[index * 7 + i].today ? true : false) + '"  data-allow="' + (dataArr[index * 7 + i].ifAllow ? true : false) + '">' + dayRenderFn(dataArr[index * 7 + i].data, customizeData[index * 7 + i]) + '</td>'
                     }
-                    var monthsHtml = function() {
-                        var html = '';
-                        var tdGen = function(index) {
-                            var str = ''
-                            for (var i = 0; i < 4; i++) {
-                                str += '<td class="months-node" data-date="' + dataArr[index * 4 + i].data.date + '" data-today="' + (dataArr[index * 4 + i].today ? true : false) + '" data-allow="' + (dataArr[index * 4 + i].ifAllow ? true : false) + '">' +
-                                    '<span>' + dataArr[index * 4 + i].data.month + '</span>' +
-                                    '</td>'
-                            }
-                            return str
-                        }
-                        for (var i = 0; i < dataArr.length / 4; i++) {
-                            html += '<tr>' +
-                                tdGen(i) +
-                                '</tr>'
-                        }
-                        return html
+                    return str
+                }
+                for (var i = 0; i < dataArr.length / 7; i++) {
+                    html += '<tr>' +
+                        tdGen(i) +
+                        '</tr>'
+                }
+                return html
+            }
+            var monthsHtml = function() {
+                var html = '';
+                var tdGen = function(index) {
+                    var str = ''
+                    for (var i = 0; i < 4; i++) {
+                        str += '<td class="months-node" data-date="' + dataArr[index * 4 + i].data.date + '" data-today="' + (dataArr[index * 4 + i].today ? true : false) + '" data-allow="' + (dataArr[index * 4 + i].ifAllow ? true : false) + '">' +
+                            '<span>' + dataArr[index * 4 + i].data.month + '</span>' +
+                            '</td>'
                     }
-                    var yearsHTML = function() {
-                        var html = '';
-                        var tdGen = function(index) {
-                            var str = ''
-                            for (var i = 0; i < 4; i++) {
-                                str += '<td class="years-node" data-date="' + dataArr[index * 4 + i].data.date + '" data-today="' + (dataArr[index * 4 + i].today ? true : false) + '" data-allow="' + (dataArr[index * 4 + i].ifAllow ? true : false) + '">' +
-                                    '<span>' + dataArr[index * 4 + i].data.year + '</span>' +
-                                    '</td>'
-                            }
-                            return str
-                        }
-                        for (var i = 0; i < dataArr.length / 4; i++) {
-                            html += '<tr>' +
-                                tdGen(i) +
-                                '</tr>'
-                        }
-                        return html
-
+                    return str
+                }
+                for (var i = 0; i < dataArr.length / 4; i++) {
+                    html += '<tr>' +
+                        tdGen(i) +
+                        '</tr>'
+                }
+                return html
+            }
+            var yearsHTML = function() {
+                var html = '';
+                var tdGen = function(index) {
+                    var str = ''
+                    for (var i = 0; i < 4; i++) {
+                        str += '<td class="years-node" data-date="' + dataArr[index * 4 + i].data.date + '" data-today="' + (dataArr[index * 4 + i].today ? true : false) + '" data-allow="' + (dataArr[index * 4 + i].ifAllow ? true : false) + '">' +
+                            '<span>' + dataArr[index * 4 + i].data.year + '</span>' +
+                            '</td>'
                     }
-                    switch (dataObj.showType) {
-                        case 'days':
-                            return daysHtml()
-                            break;
-                        case 'months':
-                            return monthsHtml()
-                            break;
-                        case 'years':
-                            return yearsHTML()
-                            break;
-                    }
-                };
+                    return str
+                }
+                for (var i = 0; i < dataArr.length / 4; i++) {
+                    html += '<tr>' +
+                        tdGen(i) +
+                        '</tr>'
+                }
+                return html
 
-            return htmlGen()
-
-
+            }
+            switch (dataObj.showType) {
+                case 'days':
+                    return daysHtml()
+                    break;
+                case 'months':
+                    return monthsHtml()
+                    break;
+                case 'years':
+                    return yearsHTML()
+                    break;
+            }
         },
         _realDateArr: function(dateArr) {
             if (dateArr[2] <= this._getDaysOfMonth([dateArr[0], dateArr[1], 1])) {
@@ -361,7 +353,7 @@
                         // this._setcurrentDate(clickDateArr)
                     this._init(clickDateArr)
                     this.nodeClickCb && this.nodeClickCb(dateNode, this)
-                        // this.hide()
+                    this.hide()
                 }).call(this)
             }
 
@@ -522,7 +514,8 @@
             }
         },
         _init: function(dateArr) {
-            var dateArr = dateArr
+            var dateArr = dateArr;
+            var _this = this
             var ifAllowData = this._ifAllowDateRange(dateArr, true)
             if (ifAllowData[0] === false) {
                 if (this._dateToTime(ifAllowData[1]) > this._dateToTime(ifAllowData[2])) {
@@ -531,16 +524,25 @@
                     dateArr = ifAllowData[3]
                 }
             }
-            var dateViewNode = document.createElement('table'),
-                viewWrap = this._el_.querySelectorAll('.date-picker-view-wrap')[0],
-                tableNode = viewWrap.querySelectorAll('table')[0];
-            this._setcurrentDate(dateArr)
-            dateViewNode.innerHTML = this._view(dateArr)
-                // console.log(tableNode)
-            if (!tableNode) { viewWrap.appendChild(dateViewNode) } else {
-                viewWrap.replaceChild(dateViewNode, tableNode)
+            var dataObj = this._viewData(dateArr);
+            var _renderFn = function(data) {
+                this._customizedata = data || []
+                    // console.log(data)
+                var dateViewNode = document.createElement('table'),
+                    viewWrap = this._el_.querySelectorAll('.date-picker-view-wrap')[0],
+                    tableNode = viewWrap.querySelectorAll('table')[0];
+                this._setcurrentDate(dateArr)
+                dateViewNode.innerHTML = this._view(dataObj)
+                    // console.log(tableNode)
+                if (!tableNode) { viewWrap.appendChild(dateViewNode) } else {
+                    viewWrap.replaceChild(dateViewNode, tableNode)
+                }
             }
-
+            if (this.render && this._currentShowType === 'days') {
+                this.data(dataObj.dataArr, _renderFn)
+            } else {
+                _renderFn.call(this)
+            }
         },
         _inited: function() {
             this._eventBind()

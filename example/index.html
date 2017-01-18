@@ -5,35 +5,101 @@
     <meta charset="UTF-8">
     <title>Document</title>
     <link href="../src/datepicker.css" rel="stylesheet" type="text/css">
+    <style>
+        .date-picker-example {
+            text-align: center;
+            padding-top: 30px;
+        }
+        
+        .change-condition .example-wrap {
+            display: inline-block
+        }
+        
+        .customize {
+            width: 400px!important;
+        }
+    </style>
 </head>
 
 <body>
-    <input type="" name="" value="" id="app">
-    </input>
-
-
-    <div style="height:200px">
-
+    <div class="date-picker-example">
+        <div class="change-condition">
+            <input type="radio" name="type" value="years" checked>年
+            <input type="radio" name="type" value="months">月
+            <input type="radio" name="type" value="days">日
+            <input type="radio" name='custim' value="true">自定义
+            <input type="radio" name='custim' value="false" checked>非自定义
+            <input type="" name="" value="" id="format" placeholder="yyyy-mm-dd">格式化
+            </input>
+            <input type="" name="" value="" id="min">最小值
+            </input>
+            <input type="" name="" value="" id="max">最大值
+        </div>
+        <div class="example-wrap">
+            <p>示例:</p>
+            <input type="text" id='example'>
+        </div>
+        </input>
     </div>
-    <button type="" id="btn"></button>
     <script src="../src/datepicker.js">
     </script>
     <script>
-        var x = new window.componentLibrary.DatePicker({
-            el: '#app',
-            customizeClass: 'my-date-picker',
-            minDate: '2016-12-20',
-            maxDate: '2017-03-09'
+        var getValue = function() {
+            function _getValue(selectors) {
+                var nodeList = document.getElementsByTagName('body')[0].querySelectorAll(selectors),
+                    value = '';
+                if (nodeList.length > 1) {
+                    Array.prototype.forEach.call(nodeList, function(i) {
+                        if (i.checked) {
+                            value = i.value
+                        }
+                    })
+                } else {
+                    value = nodeList[0].type == 'text' ? nodeList[0].value : nodeList[0].checked ? nodeList[0].value : ''
+                }
+
+                return value
+            }
+            return {
+                type: _getValue('input[name="type"]'),
+                custom: _getValue('input[name="custim"]'),
+                format: _getValue('#format'),
+                minDate: _getValue('#min'),
+                maxDate: _getValue('#max')
+            }
+        }
+        var minDate = new window.componentLibrary.DatePicker({
+            el: '#min'
         })
-        var data = [1, 2, 3, 4, 2, 5, 2]
-        new window.componentLibrary.DatePicker({
-            el: '#btn',
-            customizeClass: 'my-date-picker',
-            data: data
+        var maxDate = new window.componentLibrary.DatePicker({
+            el: '#max',
+            minDate: minDate
         })
-        new window.componentLibrary.DatePicker({
-            customizeClass: 'my-date-picker',
-            type: 'years',
+        minDate.maxDate = maxDate
+        var old = {}
+        var data = function(dataArr, cb) {
+            var _this = this
+            setTimeout(function() {
+                var data = new Array(dataArr.length).fill('test')
+                cb.call(_this, data)
+            }, 500)
+        }
+        document.getElementById('example').addEventListener('click', function() {
+            var setObj = getValue()
+            old.remove && old.remove()
+            old = new window.componentLibrary.DatePicker({
+                el: '#example',
+                type: setObj.type,
+                format: setObj.format,
+                maxDate: setObj.maxDate,
+                minDate: setObj.minDate,
+                customizeClass: setObj.custom == 'true' && 'customize',
+                data: setObj.custom == 'true' && data,
+                render: setObj.custom == 'true' && function(dateObj, data) {
+                    return dateObj.date + data + ''
+                }
+            })
+            old.show()
         })
     </script>
 </body>

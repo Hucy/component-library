@@ -8,12 +8,12 @@
     bottom: 0;
     top: 0;
     margin: auto;
-    max-width: 240px;
     border-radius: 4px;
     padding: 4px;
     box-sizing: border-box;
     box-shadow: 0 6px 12px rgba(0, 0, 0, 0.175);
-    // display:none;
+    display: none;
+    background: #fff;
 }
 
 .prev-btn,
