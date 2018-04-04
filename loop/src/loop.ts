@@ -1,24 +1,41 @@
-export default  class Loop {
-  stopArr: Array<Array<any>>;
-  apiFc: Function;
+export interface ConditionFc {
+  (data: object): boolean;
+}
+export interface PromiseFc {
+  (): Promise<any>;
+}
+
+export default class Loop {
+  condition: ConditionFc;
+  apiFc: PromiseFc;
   interval: number;
+  delay: number;
   private _timer: any;
-  constructor(stopArr: Array<Array<any>>, apiFc: Function, interval: number = 3000) {
-    this.stopArr = stopArr;
+
+  constructor(
+    condition: ConditionFc,
+    apiFc: PromiseFc,
+    interval: number = 3000,
+    delay: number = 0
+  ) {
+    this.condition = condition;
     this.apiFc = apiFc;
     this.interval = interval;
+    this.delay = delay;
   }
 
-  start() {
+  start():Promise<any> {
+    if (this.delay) {
+      return new Promise(reslove => {
+        setTimeout(() => reslove(this._start_()), this.delay);
+      });
+    }
     return this._start_();
   }
 
   private async _start_() {
     const data = await this.apiFc();
-    const shouldStop = this.stopArr.some(item => {
-      return data[item[0]] === item[1];
-    });
-    if (shouldStop) {
+    if (this.condition(data)) {
       return Promise.resolve(data);
     }
     return new Promise(resolve => {
@@ -27,6 +44,4 @@ export default  class Loop {
       }, this.interval);
     });
   }
-
 }
-
