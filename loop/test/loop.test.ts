@@ -31,4 +31,9 @@ describe('loop test', () => {
   it('Loop.start return Promise with delay ', async () => {
     await expect(new Loop((data : DataIn) => data.time === 2 , apiFnGen(), undefined, 3000).start()).resolves.toEqual({ time: 2 });
   });
+
+  it('Loop.start return Promise with timeout ', async () => {
+    await expect(new Loop((data : DataIn) => data.time === 2 , apiFnGen(), undefined, 3000, 2000).start()).rejects.toEqual({ code: 201, msg: 'timeout' });
+  });
+
 });
