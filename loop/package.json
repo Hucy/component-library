@@ -6,9 +6,9 @@
   "module": "dist/loop.es5.js",
   "scripts": {
     "test": "jest",
-    "prebuild": "rimraf dist",
+    "prebuild": "rimraf dist ../docs docs",
     "start": "rollup -c rollup.config.ts -w",
-    "build": "tsc --module commonjs && rollup -c rollup.config.ts && typedoc --out docs --target es6 --theme minimal --mode file src"
+    "build": "tsc --module commonjs && rollup -c rollup.config.ts && typedoc --out ../docs --target es6 --theme minimal --mode file src"
   },
   "author": "",
   "license": "MIT",
